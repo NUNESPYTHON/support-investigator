@@ -1,0 +1,15 @@
+# Variáveis de ambiente
+.env
+
+# Ambiente virtual
+.venv/
+
+# Cache do Python
+__pycache__/
+*.pyc
+
+# Arquivos do macOS
+.DS_Store
+
+# Configurações locais do VS Code
+.vscode/
