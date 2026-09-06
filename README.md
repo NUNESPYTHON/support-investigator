@@ -2,7 +2,7 @@
 
 ## Missão
 
-Reduzimos o tempo de investigação para que você passe mais tempo resolvendo problemas do que procurando informações.
+O Investigator não mostra apenas dados. Ele organiza o contexto necessário para que um engenheiro de suporte ou gestor compreenda rapidamente a situação de um ticket e tome a próxima decisão. O Investigator não replica o Zendesk. Ele traduz informações técnicas em contexto para apoiar decisões rápidas.
 
 ## Não estamos construindo outro Zendesk.
 
@@ -74,3 +74,19 @@ Projeto criado.
 Arquitetura inicial definida.
 Configuração externa via .env.
 Primeiro fluxo executado.
+
+## Sprint 1 — Concluída ✅
+
+### Arquitetura
+
+- Estrutura inicial do projeto
+- Configuração via `.env`
+- Integração com a API da Zendesk
+- Search API
+- Serviço de usuários
+- Serviço de tickets
+- Git inicializado
+- Primeiro commit realizado
+
+Data:
+05/09/2026

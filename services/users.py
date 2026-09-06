@@ -64,3 +64,40 @@ def buscar_usuario_por_email(email):
         "email": usuario.get("email"),
         "role": usuario.get("role"),
     }
+def buscar_usuario_por_id(user_id):
+    """
+    Busca um usuário pelo ID na API da Zendesk.
+
+    Args:
+        user_id (int): ID do usuário.
+
+    Returns:
+        dict | None
+    """
+
+    from config.settings import SUBDOMAIN
+    from services.zendesk import fazer_request
+
+    url = (
+        f"https://{SUBDOMAIN}.zendesk.com"
+        f"/api/v2/users/{user_id}.json"
+    )
+
+    response = fazer_request(url)
+
+    if response is None:
+        return None
+
+    data = response.json()
+
+    usuario = data.get("user")
+
+    if usuario is None:
+        return None
+
+    return {
+        "id": usuario.get("id"),
+        "nome": usuario.get("name"),
+        "email": usuario.get("email"),
+        "role": usuario.get("role"),
+    }

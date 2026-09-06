@@ -28,3 +28,30 @@ def buscar_tickets_por_email(email):
     tickets = buscar_todos_resultados(query)
 
     return tickets
+def buscar_ticket_por_id(ticket_id):
+    """
+    Busca um ticket específico pelo ID.
+
+    Args:
+        ticket_id (int): ID do ticket.
+
+    Returns:
+        dict | None
+    """
+
+    from config.settings import SUBDOMAIN
+    from services.zendesk import fazer_request
+
+    url = (
+        f"https://{SUBDOMAIN}.zendesk.com"
+        f"/api/v2/tickets/{ticket_id}.json"
+    )
+
+    response = fazer_request(url)
+
+    if response is None:
+        return None
+
+    data = response.json()
+
+    return data.get("ticket")
