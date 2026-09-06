@@ -29,6 +29,8 @@ Elias Nunes
 ==========================================================
 """
 
+from datetime import datetime
+
 
 def formatar_tempo(minutos):
     """
@@ -49,6 +51,7 @@ def formatar_tempo(minutos):
 
     if minutos is None:
         return "Ainda não respondido"
+    
 
     minutos = int(minutos)
 
@@ -57,7 +60,6 @@ def formatar_tempo(minutos):
 
     horas = minutos_restantes // 60
     minutos_finais = minutos_restantes % 60
-
     partes = []
 
     if dias:
@@ -80,3 +82,27 @@ def formatar_tempo(minutos):
         return "0 minutos"
 
     return " e ".join(partes)
+
+def formatar_data(data_iso):
+    """
+    Converte uma data ISO 8601 para um formato amigável.
+
+    Args:
+        data_iso (str): Data no formato ISO 8601.
+
+    Returns:
+        str: Data formatada.
+    """
+
+    if not data_iso:
+        return "Data não informada"
+
+    data = datetime.fromisoformat(
+        data_iso.replace("Z", "+00:00")
+    )
+
+    data_local = data.astimezone()
+
+    return data_local.strftime(
+        "%d/%m/%Y às %H:%M"
+    )
