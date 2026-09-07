@@ -14,6 +14,8 @@ Elias Nunes
 ==========================================================
 """
 
+from services.customer_diagnostics import diagnosticar_cliente
+from services.diagnostics import diagnosticar_ticket
 from services.tickets import buscar_tickets_por_email
 
 
@@ -43,13 +45,120 @@ def mostrar_cabecalho():
 def mostrar_menu():
     """Exibe as opções disponíveis."""
 
-    print("1 - Buscar usuário")
+    print("1 - Histórico de interações do cliente")
     print("2 - Buscar tickets por e-mail")
-    print("3 - Buscar ticket por ID")
+    print("3 - Diagnosticar ticket")
     print("4 - Consultar primeira resposta")
     print("0 - Sair")
 
     print("-" * 60)
+
+
+def historico_cliente():
+    """Solicita o e-mail e exibe o histórico do cliente."""
+
+    print()
+
+    email = input(
+        "Digite o e-mail do cliente: "
+    ).strip()
+
+    if not email:
+
+        print("\nE-mail não informado.")
+
+        input(
+            "\nPressione Enter para voltar ao menu..."
+        )
+
+        return
+
+    diagnostico = diagnosticar_cliente(email)
+
+    print()
+
+    if diagnostico is None:
+
+        print("Cliente não encontrado.")
+
+        input(
+            "\nPressione Enter para voltar ao menu..."
+        )
+
+        return
+
+    print("=" * 60)
+    print("👤 HISTÓRICO DE INTERAÇÕES DO CLIENTE")
+    print("=" * 60)
+
+    print()
+
+    print(
+        f"📧 E-mail: {diagnostico['email']}"
+    )
+
+    print(
+        f"🎫 Total de tickets: "
+        f"{diagnostico['total_tickets']}"
+    )
+
+    print(
+        f"🟢 Abertos: "
+        f"{diagnostico['abertos']}"
+    )
+
+    print(
+        f"🔵 Pendentes: "
+        f"{diagnostico['pendentes']}"
+    )
+
+    print(
+        f"⚫ Resolvidos: "
+        f"{diagnostico['resolvidos']}"
+    )
+
+    print(
+        f"⚪ Fechados: "
+        f"{diagnostico['fechados']}"
+    )
+
+    print()
+
+    print("-" * 60)
+
+    print()
+
+    print("🎫 Últimos tickets")
+
+    print()
+
+    for ticket in diagnostico["ultimos_tickets"]:
+
+        print(
+            f"#{ticket.get('id')} | "
+            f"{ticket.get('status')} | "
+            f"{ticket.get('subject') or 'Sem assunto'}"
+        )
+
+    print()
+
+    print("-" * 60)
+
+    print()
+
+    print("📝 Resumo")
+
+    print()
+
+    print(diagnostico["resumo"])
+
+    print()
+
+    print("=" * 60)
+
+    input(
+        "\nPressione Enter para voltar ao menu..."
+    )
 
 
 def buscar_tickets():
@@ -62,39 +171,53 @@ def buscar_tickets():
     ).strip()
 
     if not email:
+
         print("\nE-mail não informado.")
+
         input(
             "\nPressione Enter para voltar ao menu..."
         )
+
         return
 
     tickets = buscar_tickets_por_email(email)
 
     print()
+
     print("=" * 60)
     print("RESULTADO DA CONSULTA")
     print("=" * 60)
 
     if not tickets:
+
         print()
         print("Nenhum ticket encontrado.")
         print()
+
         input(
             "Pressione Enter para voltar ao menu..."
         )
+
         return
 
     print()
+
     print(
         f"Tickets encontrados: {len(tickets)}"
     )
+
     print()
 
     for ticket in tickets:
 
         ticket_id = ticket.get("id")
+
         status = ticket.get("status")
-        assunto = ticket.get("subject") or "Sem assunto"
+
+        assunto = (
+            ticket.get("subject")
+            or "Sem assunto"
+        )
 
         print(
             f"#{ticket_id} | "
@@ -103,6 +226,135 @@ def buscar_tickets():
         )
 
     print()
+
+    print("=" * 60)
+
+    input(
+        "\nPressione Enter para voltar ao menu..."
+    )
+
+
+def diagnosticar():
+    """Solicita um ID de ticket e exibe o resumo executivo."""
+
+    print()
+
+    ticket_id = input(
+        "Digite o ID do ticket: "
+    ).strip()
+
+    if not ticket_id.isdigit():
+
+        print("\nID de ticket inválido.")
+
+        input(
+            "\nPressione Enter para voltar ao menu..."
+        )
+
+        return
+
+    diagnostico = diagnosticar_ticket(
+        int(ticket_id)
+    )
+
+    print()
+
+    if diagnostico is None:
+
+        print("Ticket não encontrado.")
+
+        input(
+            "\nPressione Enter para voltar ao menu..."
+        )
+
+        return
+
+    print("=" * 60)
+    print("🔎 RESUMO EXECUTIVO DO TICKET")
+    print("=" * 60)
+
+    print()
+
+    print(
+        f"🎫 Ticket: "
+        f"{diagnostico['ticket_id']}"
+    )
+
+    print(
+        f"🟡 Status: "
+        f"{diagnostico['status']}"
+    )
+
+    print(
+        f"📝 Assunto: "
+        f"{diagnostico['assunto']}"
+    )
+
+    print(
+        f"📧 Solicitante: "
+        f"{diagnostico['solicitante']}"
+    )
+
+    print(
+        f"👤 Responsável: "
+        f"{diagnostico['responsavel']}"
+    )
+
+    print(
+        f"⏱ Primeira resposta: "
+        f"{diagnostico['primeira_resposta']}"
+    )
+
+    print()
+
+    print("-" * 60)
+
+    print()
+
+    print("📝 Resumo")
+
+    print()
+
+    print(diagnostico["resumo"])
+
+    print()
+
+    print("-" * 60)
+
+    print()
+
+    print("💬 Última interação")
+
+    print()
+
+    ultima = diagnostico["ultima_interacao"]
+
+    if ultima:
+
+        print(
+            f"👤 Autor: "
+            f"{ultima['autor']}"
+        )
+
+        print(
+            f"📅 Data: "
+            f"{ultima['data']}"
+        )
+
+        print()
+
+        print(
+            f"💬 {ultima['texto']}"
+        )
+
+    else:
+
+        print(
+            "Nenhuma interação encontrada."
+        )
+
+    print()
+
     print("=" * 60)
 
     input(
@@ -122,10 +374,7 @@ def executar_opcao(opcao):
 
     if opcao == "1":
 
-        print(
-            "\nBusca de usuário ainda está "
-            "em desenvolvimento."
-        )
+        historico_cliente()
 
     elif opcao == "2":
 
@@ -133,26 +382,32 @@ def executar_opcao(opcao):
 
     elif opcao == "3":
 
-        print(
-            "\nBusca de ticket por ID ainda está "
-            "em desenvolvimento."
-        )
+        diagnosticar()
 
     elif opcao == "4":
 
         print(
-            "\nConsulta de primeira resposta ainda está "
-            "em desenvolvimento."
+            "\nConsulta de primeira resposta "
+            "ainda está em desenvolvimento."
+        )
+
+        input(
+            "\nPressione Enter para voltar ao menu..."
         )
 
     elif opcao == "0":
 
         print("\nAté logo! 👋")
+
         return False
 
     else:
 
         print("\nOpção inválida.")
+
+        input(
+            "\nPressione Enter para voltar ao menu..."
+        )
 
     return True
 
@@ -170,9 +425,12 @@ def main():
             "\nEscolha uma opção: "
         ).strip()
 
-        continuar = executar_opcao(opcao)
+        continuar = executar_opcao(
+            opcao
+        )
 
         if not continuar:
+
             break
 
 

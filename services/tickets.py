@@ -47,7 +47,10 @@ def buscar_ticket_por_id(ticket_id):
         f"/api/v2/tickets/{ticket_id}.json"
     )
 
-    response = fazer_request(url)
+    response = fazer_request(
+    url,
+    params={"include": "slas"}
+)
 
     if response is None:
         return None

@@ -17,6 +17,7 @@ from services.metrics import buscar_metricas_ticket
 from services.tickets import buscar_ticket_por_id
 from services.users import buscar_usuario_por_id
 from utils.formatters import formatar_tempo
+from services.comments import buscar_ultima_interacao
 
 
 def gerar_resumo(ticket, primeira_resposta):
@@ -104,6 +105,9 @@ def diagnosticar_ticket(ticket_id):
     # ------------------------------------------------------
 
     metricas = buscar_metricas_ticket(ticket_id)
+    ultima_interacao = buscar_ultima_interacao(
+    ticket_id
+)
 
     primeira_resposta = "Ainda não respondido"
 
@@ -151,5 +155,6 @@ def diagnosticar_ticket(ticket_id):
 
         "primeira_resposta": primeira_resposta,
         "resumo": resumo,
+        "ultima_interacao": ultima_interacao,
     }
          

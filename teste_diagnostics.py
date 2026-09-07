@@ -47,4 +47,32 @@ else:
 
     print()
 
+    print()
+
+    print("-" * 60)
+
+    print()
+
+    print("💬 Última interação")
+
+    print()
+
+    ultima = diagnostico["ultima_interacao"]
+
+if ultima:
+
+    print(f"👤 Autor: {ultima['autor']}")
+
+    print(f"📅 Data: {ultima['data']}")
+
+    print()
+
+    print(f"💬 {ultima['texto']}")
+
+else:
+
+    print("Nenhuma interação encontrada.") 
+
+    print()
+
     print("=" * 60)

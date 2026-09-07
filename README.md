@@ -2,12 +2,23 @@
 
 ## Missão
 
-O Investigator não mostra apenas dados. Ele organiza o contexto necessário para que um engenheiro de suporte ou gestor compreenda rapidamente a situação de um ticket e tome a próxima decisão. O Investigator não replica o Zendesk. Ele traduz informações técnicas em contexto para apoiar decisões rápidas.
+O Investigator não mostra apenas dados. Ele organiza o contexto necessário para que gestores, líderes técnicos, account managers e engenheiros de suporte compreendam rapidamente a situação de um ticket e possam tomar decisões. compreenda rapidamente a situação de um ticket e tome a próxima decisão. O Investigator não replica o Zendesk. Ele traduz informações técnicas em contexto para apoiar decisões rápidas.
 
 ## Não estamos construindo outro Zendesk.
 
 Estamos construindo uma ferramenta que ajuda engenheiros de suporte a investigar problemas com rapidez, clareza e contexto.
+---
 
+## Público-alvo
+
+O Zendesk Investigator foi desenvolvido para:
+
+- Líderes técnicos
+- Gerentes de suporte
+- Account Managers
+- Gestores de atendimento
+
+Seu objetivo é fornecer rapidamente o contexto de um ticket sem a necessidade de navegar por diversas telas do Zendesk.
 ---
 
 ## Sobre o projeto
@@ -41,6 +52,17 @@ Cada funcionalidade desenvolvida deve responder a três perguntas:
 3. Como ela ajuda o analista?
 
 Se não responder essas perguntas, ela não entra no MVP.
+
+---
+
+## Princípios
+- Nunca obrigar o usuário a abrir o Zendesk para responder uma pergunta simples.
+
+- Transformar dados técnicos em contexto para tomada de decisão.
+
+- Mostrar primeiro as informações mais importantes.
+
+- Cada tela deve responder uma pergunta real do usuário.
 
 ## 
 
@@ -90,3 +112,16 @@ Primeiro fluxo executado.
 
 Data:
 05/09/2026
+
+### 06/09/2026
+
+Sprint 3 e Sprint 4 concluídas.
+
+Principais entregas:
+
+- Diagnóstico do Ticket
+- Primeira resposta
+- Resumo Executivo
+- Última interação
+- Serviço de comentários
+- Formatação de datas

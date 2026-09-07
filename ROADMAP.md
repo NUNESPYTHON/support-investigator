@@ -11,91 +11,41 @@ precisar abrir o Zendesk.
 
 # MVP
 
-## ✅ Sprint 1
+# 🗺️ Roadmap
 
+## ✅ Sprint 1
 - Estrutura do projeto
 - Arquitetura
 - Integração com a API
-- Search API
-- Users Service
-- Tickets Service
 - Git
-- Primeiro Commit
-
----
+- Primeiro commit
 
 ## ✅ Sprint 2
-
+- Executive Ticket Summary MVP
 - Diagnóstico do Ticket
 - Primeira resposta
 - Responsável pelo atendimento
 - Solicitante
-- Assunto
-- Status
-
----
-
-# Próximas Sprints
-
-## Sprint 3
-
-- Última interação
-- Quem enviou a última mensagem
-- Data da última resposta
-- Resumo da última interação
-
----
-
-## Sprint 4
-
-- Quem está aguardando
-- Cliente
-- Suporte
-- Automação
-
----
-
-## Sprint 5
-
-- SLA
-- Dentro do SLA
-- Fora do SLA
-- Tempo restante
-
----
-
-## Sprint 6
-
 - Resumo Executivo
 
-Exemplo:
+## ✅ Sprint 3
+- Última interação
+- Nome do autor
+- Formatação de data
+- Serviço de comentários
 
-• O suporte respondeu dentro do SLA.
+## 🚀 Próxima Sprint
 
-• Estamos aguardando retorno do cliente.
-
-• Última atualização realizada hoje às 09:42.
-
----
-
-## Sprint 7
-
-- Exportação CSV
-- Relatórios
-- Envio por e-mail
-
----
-
-## Sprint 8
-
-- Interface Streamlit
-
----
+- Integrar o Resumo Executivo ao app.py
+- Opção "Diagnosticar Ticket"
+- Melhorar apresentação dos status
+- Refinamento da experiência do usuário
 
 ## Futuro
 
+- Quem está aguardando
 - Dashboard
-- Pesquisa inteligente
-- IA para resumir tickets
-- Histórico resumido
-- Indicadores executivos
+- Exportação CSV
+- Envio por e-mail
+- Interface Streamlit
+- IA para resumo de tickets
