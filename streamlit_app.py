@@ -1,15 +1,40 @@
 import streamlit as st
 
-from services.customer_diagnostics import diagnosticar_cliente
-from services.diagnostics import diagnosticar_ticket
-from services.email import enviar_arquivo_email
-from services.export import (
-    STATUS_MAP,
-    filtrar_tickets_por_status,
-    gerar_csv_bytes,
-    gerar_excel_bytes,
+from ui.navigation import inicializar_estado
+
+from ui.ticket_details import (
+    render as render_ticket_details,
 )
-from services.tickets import buscar_tickets_por_email
+
+from ui.zendesk_connection import (
+    render as render_zendesk_connection,
+)
+
+from ui.customer_history import (
+    render_resumo,
+    render_ticket_card,
+)
+
+from ui.export import (
+    render as render_export,
+    processar_exportacao,
+    render_resultado,
+)
+
+from services.customer_diagnostics import (
+    diagnosticar_cliente,
+)
+
+from services.export import STATUS_MAP
+
+from services.oauth import (
+    gerar_url_autorizacao,
+    trocar_codigo_por_token,
+    salvar_contexto_oauth,
+    obter_contexto_oauth,
+    remover_contexto_oauth,
+    normalizar_subdomain,
+)
 
 
 # ==========================================================
@@ -24,8 +49,223 @@ st.set_page_config(
 
 
 # ==========================================================
-# CORES DOS STATUS
+# INICIALIZAÇÃO DO ESTADO
 # ==========================================================
+
+inicializar_estado(st)
+
+
+# ==========================================================
+# CALLBACK OAUTH
+# ==========================================================
+
+query_params = st.query_params
+
+authorization_code = query_params.get("code")
+returned_state = query_params.get("state")
+oauth_error = query_params.get("error")
+oauth_error_description = query_params.get("error_description")
+
+
+# ----------------------------------------------------------
+# ERRO DEVOLVIDO PELO ZENDESK
+# ----------------------------------------------------------
+
+if oauth_error:
+
+    mensagem = oauth_error
+
+    if oauth_error_description:
+        mensagem += f": {oauth_error_description}"
+
+    st.error(
+        f"Falha na autorização do Zendesk: {mensagem}"
+    )
+
+    st.query_params.clear()
+
+
+# ----------------------------------------------------------
+# CALLBACK COM AUTHORIZATION CODE
+# ----------------------------------------------------------
+
+elif authorization_code:
+
+    # ------------------------------------------------------
+    # VALIDAR STATE
+    # ------------------------------------------------------
+
+    if not returned_state:
+
+        st.error(
+            "O callback OAuth não retornou o parâmetro state."
+        )
+
+        st.query_params.clear()
+
+    else:
+
+        # --------------------------------------------------
+        # RECUPERAR CONTEXTO DO OAUTH
+        # --------------------------------------------------
+
+        oauth_context = obter_contexto_oauth(
+            returned_state
+        )
+
+        if not oauth_context:
+
+            st.error(
+                "A sessão OAuth expirou ou não foi encontrada. "
+                "Inicie a conexão novamente."
+            )
+
+            st.query_params.clear()
+
+        else:
+
+            expected_state = oauth_context.get(
+                "state"
+            )
+
+            # ----------------------------------------------
+            # VALIDAR STATE
+            # ----------------------------------------------
+
+            if returned_state != expected_state:
+
+                st.error(
+                    "Falha de segurança: "
+                    "o parâmetro state não corresponde "
+                    "ao estado esperado."
+                )
+
+                remover_contexto_oauth(
+                    returned_state
+                )
+
+                st.query_params.clear()
+
+            else:
+
+                # ------------------------------------------
+                # RECUPERAR DADOS DA CONEXÃO
+                # ------------------------------------------
+
+                subdomain = oauth_context.get(
+                    "subdomain"
+                )
+
+                client_kind = oauth_context.get(
+                    "client_kind"
+                )
+
+                client_id = oauth_context.get(
+                    "client_id"
+                )
+
+                client_secret = oauth_context.get(
+                    "client_secret"
+                )
+
+                code_verifier = oauth_context.get(
+                    "code_verifier"
+                )
+
+                try:
+
+                    # --------------------------------------
+                    # TROCAR CODE POR TOKEN
+                    # --------------------------------------
+
+                    token_data = trocar_codigo_por_token(
+
+    subdomain=subdomain,
+
+    code=authorization_code,
+
+    client_kind=client_kind,
+
+    client_id=client_id,
+
+    client_secret=client_secret,
+
+    code_verifier=code_verifier,
+
+)
+
+                    # --------------------------------------
+                    # SALVAR CONEXÃO
+                    # --------------------------------------
+
+                    st.session_state[
+                        "zendesk_connected"
+                    ] = True
+
+                    st.session_state[
+                        "zendesk_access_token"
+                    ] = token_data.get(
+                        "access_token"
+                    )
+
+                    st.session_state[
+                        "zendesk_refresh_token"
+                    ] = token_data.get(
+                        "refresh_token"
+                    )
+
+                    st.session_state[
+                        "zendesk_token_data"
+                    ] = token_data
+
+                    st.session_state[
+                        "oauth_ctx_subdomain"
+                    ] = subdomain
+
+                    st.session_state[
+                        "oauth_ctx_client_kind"
+                    ] = client_kind
+
+                    st.session_state[
+                        "oauth_ctx_client_id"
+                    ] = client_id
+
+                    st.session_state[
+                        "oauth_ctx_client_secret"
+                    ] = client_secret
+
+                    # --------------------------------------
+                    # REMOVER CONTEXTO TEMPORÁRIO
+                    # --------------------------------------
+
+                    remover_contexto_oauth(
+                        returned_state
+                    )
+
+                    # --------------------------------------
+                    # LIMPAR URL DO CALLBACK
+                    # --------------------------------------
+
+                    st.query_params.clear()
+
+                    st.success(
+                        "✅ Zendesk conectado com sucesso!"
+                    )
+
+                    st.rerun()
+
+                except Exception as erro:
+
+                    remover_contexto_oauth(
+                        returned_state
+                    )
+
+                    st.error(
+                        "Não foi possível concluir "
+                        f"a conexão OAuth: {erro}"
+                    )
+
+                    st.query_params.clear()
 
 STATUS_CONFIG = {
     "new": {
@@ -35,7 +275,7 @@ STATUS_CONFIG = {
     },
     "open": {
         "label": "Aberto",
-        "background": "#DC2626", 
+        "background": "#DC2626",
         "text": "#FFFFFF",
     },
     "pending": {
@@ -95,6 +335,14 @@ st.markdown(
             color: #64748B;
             font-size: 1rem;
             margin-bottom: 2rem;
+        }
+
+        .card-title {
+            color: #172554;
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 0.5rem;
         }
 
         .section-title {
@@ -204,11 +452,144 @@ st.markdown(
     '</div>',
     unsafe_allow_html=True,
 )
+# ==========================================================
+# CONEXÃO COM ZENDESK
+# ==========================================================
+
+# ==========================================================
+# STATUS DA CONEXÃO
+# ==========================================================
+
+if st.session_state.get("zendesk_connected"):
+
+    connected_subdomain = st.session_state.get(
+        "oauth_ctx_subdomain"
+    )
+
+    st.success(
+        f"🟢 Conectado ao Zendesk: "
+        f"{connected_subdomain}.zendesk.com"
+    )
+
+    if st.button(
+        "Desconectar",
+        key="btn_desconectar_zendesk",
+        use_container_width=True,
+    ):
+
+        for chave in [
+            "zendesk_connected",
+            "zendesk_access_token",
+            "zendesk_refresh_token",
+            "zendesk_token_data",
+            "oauth_state",
+            "oauth_code_verifier",
+            "oauth_ctx_subdomain",
+            "oauth_ctx_client_kind",
+            "oauth_ctx_client_id",
+            "oauth_ctx_client_secret",
+        ]:
+            st.session_state.pop(
+                chave,
+                None,
+            )
+
+        st.rerun()
+       
+
+
 
 
 # ==========================================================
-# COLUNAS
+# CONEXÃO COM ZENDESK
 # ==========================================================
+
+oauth_form = render_zendesk_connection()
+
+
+
+# ==========================================================
+# INICIAR CONEXÃO OAUTH
+# ==========================================================
+
+if oauth_form["conectar"]:
+
+    if not oauth_form["subdomain"].strip():
+
+        st.warning(
+            "Informe o subdomínio do Zendesk."
+        )
+
+    elif not oauth_form["client_id"].strip():
+
+        st.warning(
+            "Informe o Client ID."
+        )
+
+    elif (
+        oauth_form["client_kind"] == "confidential"
+        and not oauth_form["client_secret"]
+    ):
+
+        st.warning(
+            "Informe o Client Secret."
+        )
+
+    else:
+
+        try:
+
+            # --------------------------------------------------
+            # GERAR URL DE AUTORIZAÇÃO
+            # --------------------------------------------------
+
+            oauth_data = gerar_url_autorizacao(
+                subdomain=oauth_form["subdomain"],
+                state=None,
+                client_kind=oauth_form["client_kind"],
+                client_id=oauth_form["client_id"],
+            )
+
+            # --------------------------------------------------
+            # SALVAR CONTEXTO TEMPORÁRIO DO OAUTH
+            # --------------------------------------------------
+
+            salvar_contexto_oauth(
+    oauth_data["state"],
+    {
+        "state": oauth_data["state"],
+        "subdomain": normalizar_subdomain(
+            oauth_form["subdomain"]
+        ),
+        "client_kind": oauth_form["client_kind"],
+        "client_id": oauth_form["client_id"],
+        "client_secret": oauth_form["client_secret"],
+        "code_verifier": oauth_data["code_verifier"],
+    },
+)
+
+            # --------------------------------------------------
+            # BOTÃO DE AUTORIZAÇÃO
+            # --------------------------------------------------
+
+            st.info(
+                "A configuração foi preparada. "
+                "Clique abaixo para entrar no Zendesk "
+                "e autorizar o Support Investigator."
+            )
+
+            st.link_button(
+                "Autorizar no Zendesk",
+                oauth_data["url"],
+                use_container_width=True,
+            )
+
+        except Exception as erro:
+
+            st.error(
+                f"Não foi possível iniciar o OAuth: {erro}"
+            )
+ 
 
 col1, col2, col3 = st.columns(3)
 
@@ -222,9 +603,7 @@ with col1:
     with st.container(border=True):
 
         st.markdown(
-            '<div class="section-title">'
-            'Diagnóstico do Ticket'
-            '</div>',
+            '<div class="card-title">Detalhes do Ticket</div>',
             unsafe_allow_html=True,
         )
 
@@ -246,7 +625,7 @@ with col1:
         )
 
         diagnosticar = st.button(
-            "Diagnosticar",
+            "Consultar",
             use_container_width=True,
             key="btn_diagnosticar",
         )
@@ -291,101 +670,6 @@ with col2:
 
 
 # ==========================================================
-# RESULTADO DO HISTÓRICO DO CLIENTE
-# ==========================================================
-
-if consultar:
-
-    if not email_cliente:
-
-        st.warning(
-            "Informe o e-mail do cliente."
-        )
-
-    else:
-
-        diagnostico_cliente = diagnosticar_cliente(
-            email_cliente.strip()
-        )
-
-        if diagnostico_cliente is None:
-
-            st.error(
-                "Nenhum histórico encontrado para este cliente."
-            )
-
-        else:
-
-            st.markdown(
-                "## Histórico de Interações"
-            )
-
-            resultado_col1, resultado_col2 = st.columns(2)
-
-            with resultado_col1:
-
-                st.caption("E-mail")
-
-                st.write(
-                    f"**{diagnostico_cliente['email']}**"
-                )
-
-                st.caption("Total de tickets")
-
-                st.write(
-                    f"**{diagnostico_cliente['total_tickets']}**"
-                )
-
-                st.caption("Abertos")
-
-                st.write(
-                    f"**{diagnostico_cliente['abertos']}**"
-                )
-
-            with resultado_col2:
-
-                st.caption("Pendentes")
-
-                st.write(
-                    f"**{diagnostico_cliente['pendentes']}**"
-                )
-
-                st.caption("Resolvidos")
-
-                st.write(
-                    f"**{diagnostico_cliente['resolvidos']}**"
-                )
-
-                st.caption("Fechados")
-
-                st.write(
-                    f"**{diagnostico_cliente['fechados']}**"
-                )
-
-            st.divider()
-
-            st.markdown("### Últimos tickets")
-
-            for ticket in diagnostico_cliente[
-                "ultimos_tickets"
-            ]:
-
-                st.write(
-                    f"**#{ticket.get('id')}** | "
-                    f"{ticket.get('status')} | "
-                    f"{ticket.get('subject') or 'Sem assunto'}"
-                )
-
-            st.divider()
-
-            st.markdown("### Resumo")
-
-            st.info(
-                diagnostico_cliente["resumo"]
-            )
-
-
-# ==========================================================
 # EXPORTAÇÃO
 # ==========================================================
 
@@ -393,258 +677,16 @@ with col3:
 
     with st.container(border=True):
 
-        st.markdown(
-            '<div class="section-title">'
-            'Exportação'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.markdown(
-            '<div class="section-description">'
-            'Exporte os tickets em CSV ou Excel.'
-            '</div>',
-            unsafe_allow_html=True,
-        )
-
-        st.write("")
-
-        email_exportacao = st.text_input(
-            "E-mail do Cliente",
-            key="email_exportacao",
-            placeholder="cliente@empresa.com",
-        )
-
-        status_exportacao = st.selectbox(
-            "Status",
-            list(STATUS_MAP.keys()),
-            key="status_exportacao",
-        )
-
-        formato_exportacao = st.selectbox(
-            "Formato",
-            [
-                "CSV",
-                "Excel",
-            ],
-            key="formato_exportacao",
-        )
-
-        gerar_exportacao = st.button(
-            "Gerar arquivo",
-            use_container_width=True,
-            key="btn_exportar",
-        )
+        (
+            email_exportacao,
+            status_exportacao,
+            formato_exportacao,
+            gerar_exportacao,
+        ) = render_export()
 
 
 # ==========================================================
-# PROCESSAMENTO DA EXPORTAÇÃO
-# ==========================================================
-
-if gerar_exportacao:
-
-    if not email_exportacao:
-
-        st.warning(
-            "Informe o e-mail do cliente."
-        )
-
-    else:
-
-        tickets_exportacao = (
-            buscar_tickets_por_email(
-                email_exportacao.strip()
-            )
-        )
-
-        if not tickets_exportacao:
-
-            st.warning(
-                "Nenhum ticket encontrado para este cliente."
-            )
-
-        else:
-
-            status_api = STATUS_MAP[
-                status_exportacao
-            ]
-
-            tickets_filtrados = (
-                filtrar_tickets_por_status(
-                    tickets_exportacao,
-                    status_api,
-                )
-            )
-
-            if not tickets_filtrados:
-
-                st.warning(
-                    "Nenhum ticket encontrado "
-                    f"com o status '{status_exportacao}'."
-                )
-
-            else:
-
-                quantidade = len(
-                    tickets_filtrados
-                )
-
-                st.success(
-                    f"{quantidade} ticket(s) "
-                    "pronto(s) para exportação."
-                )
-
-                if formato_exportacao == "CSV":
-
-                    arquivo_bytes = (
-                        gerar_csv_bytes(
-                            tickets_filtrados
-                        )
-                    )
-
-                    nome_arquivo = (
-                        "tickets_exportados.csv"
-                    )
-
-                    mime_type = "text/csv"
-
-                else:
-
-                    arquivo_bytes = (
-                        gerar_excel_bytes(
-                            tickets_filtrados
-                        )
-                    )
-
-                    nome_arquivo = (
-                        "tickets_exportados.xlsx"
-                    )
-
-                    mime_type = (
-                        "application/vnd.openxmlformats-officedocument."
-                        "spreadsheetml.sheet"
-                    )
-
-                # --------------------------------------------------
-                # DOWNLOAD
-                # --------------------------------------------------
-
-                st.download_button(
-                    label=f"Baixar {formato_exportacao}",
-                    data=arquivo_bytes,
-                    file_name=nome_arquivo,
-                    mime=mime_type,
-                    use_container_width=True,
-                    key="download_exportacao",
-                )
-
-                st.divider()
-
-               
-
-                # --------------------------------------------------
-                # ENVIO POR E-MAIL
-                # --------------------------------------------------
-
-                st.markdown(
-                    "### Enviar por e-mail (opcional)"
-                )
-
-                destinatario = st.text_input(
-                    "Destinatário",
-                    key="email_destinatario",
-                    placeholder="gerente@empresa.com",
-                )
-
-                enviar_email = st.button(
-                    "Enviar arquivo",
-                    use_container_width=True,
-                    key="btn_enviar_email",
-                )
-    if enviar_email:
-
-     if not destinatario:
-
-        st.warning(
-            "Informe o e-mail do destinatário."
-        )
-
-    else:
-
-        from tempfile import NamedTemporaryFile
-        from pathlib import Path
-
-        arquivo_temporario = None
-
-        try:
-
-            with NamedTemporaryFile(
-                suffix=(
-                    ".csv"
-                    if formato_exportacao == "CSV"
-                    else ".xlsx"
-                ),
-                delete=False,
-            ) as arquivo_temp:
-
-                arquivo_temp.write(
-                    arquivo_bytes
-                )
-
-                arquivo_temporario = (
-                    arquivo_temp.name
-                )
-
-            resultado = enviar_arquivo_email(
-                arquivo_temporario,
-                destinatario.strip(),
-                "Support Investigator - Exportação",
-                (
-                    "Olá,\n\n"
-                    "Segue em anexo o arquivo "
-                    "gerado pelo Support Investigator.\n\n"
-                    "Atenciosamente,\n"
-                    "Support Investigator"
-                ),
-            )
-
-            if resultado:
-
-                st.success(
-                    "Arquivo enviado com sucesso."
-                )
-
-            else:
-
-                st.error(
-                    "Não foi possível enviar o arquivo."
-                )
-
-        except Exception as erro:
-
-            st.error(
-                f"Erro ao enviar o arquivo: {erro}"
-            )
-
-        finally:
-
-            if arquivo_temporario:
-
-                caminho_temporario = Path(
-                    arquivo_temporario
-                )
-
-                if caminho_temporario.exists():
-
-                    caminho_temporario.unlink()
-
-            
-# ==========================================================
-# RESULTADO DO DIAGNÓSTICO
-# ==========================================================
-
-# ==========================================================
-# RESULTADO DO DIAGNÓSTICO
+# DETALHES DO TICKET
 # ==========================================================
 
 if diagnosticar:
@@ -663,145 +705,138 @@ if diagnosticar:
 
     else:
 
-        diagnostico = diagnosticar_ticket(
-            int(ticket_id)
+        render_ticket_details(
+            ticket_id
         )
 
-        if diagnostico is None:
+
+# ==========================================================
+# CONSULTA DO HISTÓRICO DO CLIENTE
+# ==========================================================
+
+if consultar:
+
+    if not email_cliente:
+
+        st.warning(
+            "Informe o e-mail do cliente."
+        )
+
+        st.session_state[
+            "historico_cliente"
+        ] = None
+
+        st.session_state[
+            "ticket_selecionado"
+        ] = None
+
+    else:
+
+        diagnostico_cliente = diagnosticar_cliente(
+            email_cliente.strip()
+        )
+
+        if diagnostico_cliente is None:
 
             st.error(
-                "Ticket não encontrado."
+                "Nenhum histórico encontrado para este cliente."
             )
+
+            st.session_state[
+                "historico_cliente"
+            ] = None
+
+            st.session_state[
+                "ticket_selecionado"
+            ] = None
 
         else:
 
-            with st.container(border=True):
+            st.session_state[
+                "historico_cliente"
+            ] = diagnostico_cliente
 
-                st.subheader(
-                    "Resumo Executivo"
-                )
+            st.session_state[
+                "ticket_selecionado"
+            ] = None
 
-                resultado_col1, resultado_col2 = st.columns(2)
 
-                # --------------------------------------------------
-                # COLUNA 1
-                # --------------------------------------------------
+# ==========================================================
+# EXIBIÇÃO DO HISTÓRICO
+# ==========================================================
 
-                with resultado_col1:
+diagnostico_cliente = st.session_state.get(
+    "historico_cliente"
+)
 
-                    st.caption("Ticket")
+if diagnostico_cliente:
 
-                    st.write(
-                        f"**{diagnostico['ticket_id']}**"
-                    )
+    st.markdown(
+        "## Histórico de Interações"
+    )
 
-                    st.caption("Status")
+    render_resumo(
+        diagnostico_cliente
+    )
 
-                    status = diagnostico["status"]
+    st.divider()
 
-                    status_config = STATUS_CONFIG.get(
-                        status,
-                        {
-                            "label": status,
-                            "background": "#64748B",
-                            "text": "#FFFFFF",
-                        },
-                    )
+    st.markdown(
+        "### Últimos tickets"
+    )
 
-                    status_style = (
-                        f"background-color: "
-                        f"{status_config['background']}; "
-                        f"color: "
-                        f"{status_config['text']};"
-                    )
+    for ticket in diagnostico_cliente[
+        "ultimos_tickets"
+    ]:
 
-                    if status == "closed":
+        render_ticket_card(
+            ticket
+        )
 
-                        status_style += (
-                            "border: 1px solid #CBD5E1;"
-                        )
+    st.divider()
 
-                    st.markdown(
-                        f'<span class="status-badge" '
-                        f'style="{status_style}">'
-                        f'{status_config["label"]}'
-                        f'</span>',
-                        unsafe_allow_html=True,
-                    )
+    st.markdown(
+        "### Resumo"
+    )
 
-                    st.write("")
+    st.info(
+        diagnostico_cliente["resumo"]
+    )
 
-                    st.caption("Solicitante")
 
-                    st.write(
-                        f"**{diagnostico['solicitante']}**"
-                    )
+# ==========================================================
+# DETALHES DO TICKET SELECIONADO
+# ==========================================================
 
-                    st.caption("Responsável")
+ticket_selecionado = st.session_state.get(
+    "ticket_selecionado"
+)
 
-                    st.write(
-                        f"**{diagnostico['responsavel']}**"
-                    )
+if ticket_selecionado:
 
-                # --------------------------------------------------
-                # COLUNA 2
-                # --------------------------------------------------
+    render_ticket_details(
+        ticket_selecionado
+    )
 
-                with resultado_col2:
 
-                    st.caption("Assunto")
+# ==========================================================
+# PROCESSAMENTO DA EXPORTAÇÃO
+# ==========================================================
 
-                    st.write(
-                        f"**{diagnostico['assunto']}**"
-                    )
+if gerar_exportacao:
 
-                    st.caption("Primeira resposta")
+    processar_exportacao(
+        email_exportacao,
+        status_exportacao,
+        formato_exportacao,
+    )
 
-                    st.write(
-                        f"**{diagnostico['primeira_resposta']}**"
-                    )
 
-                st.divider()
+# ==========================================================
+# RESULTADO DA EXPORTAÇÃO
+# ==========================================================
 
-                # --------------------------------------------------
-                # RESUMO
-                # --------------------------------------------------
-
-                st.markdown("### Resumo")
-
-                st.info(
-                    diagnostico["resumo"]
-                )
-
-                # --------------------------------------------------
-                # ÚLTIMA INTERAÇÃO
-                # --------------------------------------------------
-
-                ultima = diagnostico.get(
-                    "ultima_interacao"
-                )
-
-                st.markdown("### Última interação")
-
-                if ultima:
-
-                    st.write(
-                        f"**Autor:** {ultima['autor']}"
-                    )
-
-                    st.write(
-                        f"**Data:** {ultima['data']}"
-                    )
-
-                    st.write(
-                        ultima["texto"]
-                    )
-
-                else:
-
-                    st.info(
-                        "Nenhuma interação encontrada."
-                    )
+render_resultado()
 
 
 # ==========================================================

@@ -1,8 +1,25 @@
-from services.users import buscar_usuario_por_email
+"""
+==========================================================
+Support Investigator
+
+Arquivo:
+tickets.py
+
+Responsabilidade:
+Funções relacionadas à busca de tickets.
+
+Autor:
+Elias Nunes
+==========================================================
+"""
+
+from config.settings import SUBDOMAIN
 from services.search import (
-    montar_query_tickets,
     buscar_todos_resultados,
+    montar_query_tickets,
 )
+from services.users import buscar_usuario_por_email
+from services.zendesk import fazer_request
 
 
 def buscar_tickets_por_email(email):
@@ -13,7 +30,7 @@ def buscar_tickets_por_email(email):
         email (str): E-mail do solicitante.
 
     Returns:
-        list
+        list: Lista de tickets encontrados.
     """
 
     usuario = buscar_usuario_por_email(email)
@@ -28,6 +45,8 @@ def buscar_tickets_por_email(email):
     tickets = buscar_todos_resultados(query)
 
     return tickets
+
+
 def buscar_ticket_por_id(ticket_id):
     """
     Busca um ticket específico pelo ID.
@@ -36,11 +55,8 @@ def buscar_ticket_por_id(ticket_id):
         ticket_id (int): ID do ticket.
 
     Returns:
-        dict | None
+        dict | None: Ticket encontrado ou None.
     """
-
-    from config.settings import SUBDOMAIN
-    from services.zendesk import fazer_request
 
     url = (
         f"https://{SUBDOMAIN}.zendesk.com"
@@ -48,9 +64,9 @@ def buscar_ticket_por_id(ticket_id):
     )
 
     response = fazer_request(
-    url,
-    params={"include": "slas"}
-)
+        url,
+        params={"include": "slas"},
+    )
 
     if response is None:
         return None
