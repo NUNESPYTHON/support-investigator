@@ -1,6 +1,6 @@
 """
 ==========================================================
-Zendesk Investigator
+Support Investigator
 
 Arquivo:
 comments.py
@@ -14,11 +14,15 @@ Elias Nunes
 ==========================================================
 """
 
-from config.settings import SUBDOMAIN
+from services.auth import montar_url
 from services.zendesk import fazer_request
 from services.users import buscar_usuario_por_id
 from utils.formatters import formatar_data
 
+
+# ==========================================================
+# BUSCAR ÚLTIMA INTERAÇÃO
+# ==========================================================
 
 def buscar_ultima_interacao(ticket_id):
     """
@@ -31,8 +35,7 @@ def buscar_ultima_interacao(ticket_id):
         dict | None
     """
 
-    url = (
-        f"https://{SUBDOMAIN}.zendesk.com"
+    url = montar_url(
         f"/api/v2/tickets/{ticket_id}/comments"
     )
 
@@ -61,22 +64,24 @@ def buscar_ultima_interacao(ticket_id):
         for comentario in comentarios:
 
             if comentario.get("public") is True:
+
                 autor = buscar_usuario_por_id(
-                comentario.get("author_id")
-)
+                    comentario.get("author_id")
+                )
 
                 return {
                     "id": comentario.get("id"),
                     "autor": (
-    autor.get("nome")
-    if autor
-    else "Não identificado"
-),
-
-"autor_id": comentario.get("author_id"),
+                        autor.get("nome")
+                        if autor
+                        else "Não identificado"
+                    ),
+                    "autor_id": comentario.get(
+                        "author_id"
+                    ),
                     "data": formatar_data(
-    comentario.get("created_at")
-),
+                        comentario.get("created_at")
+                    ),
                     "texto": (
                         comentario.get("plain_body")
                         or comentario.get("body")
@@ -84,7 +89,9 @@ def buscar_ultima_interacao(ticket_id):
                     ),
                 }
 
-        url = data.get("next_page")
+        url = data.get(
+            "next_page"
+        )
 
         params = None
 

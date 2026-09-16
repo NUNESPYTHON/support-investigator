@@ -1,6 +1,6 @@
 """
 ==========================================================
-Zendesk Investigator
+Support Investigator
 
 Arquivo:
 metrics.py
@@ -13,9 +13,13 @@ Elias Nunes
 ==========================================================
 """
 
-from config.settings import SUBDOMAIN
+from services.auth import montar_url
 from services.zendesk import fazer_request
 
+
+# ==========================================================
+# BUSCAR MÉTRICAS DO TICKET
+# ==========================================================
 
 def buscar_metricas_ticket(ticket_id):
     """
@@ -28,16 +32,19 @@ def buscar_metricas_ticket(ticket_id):
         dict | None
     """
 
-    url = (
-        f"https://{SUBDOMAIN}.zendesk.com"
+    url = montar_url(
         f"/api/v2/tickets/{ticket_id}/metrics"
     )
 
-    response = fazer_request(url)
+    response = fazer_request(
+        url
+    )
 
     if response is None:
         return None
 
     data = response.json()
 
-    return data.get("ticket_metric")
+    return data.get(
+        "ticket_metric"
+    )

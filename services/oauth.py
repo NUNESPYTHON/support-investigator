@@ -46,9 +46,7 @@ ZENDESK_TOKEN_PATH = (
 )
 
 DEFAULT_SCOPE = (
-    "tickets:read "
-    "users:read "
-    "organizations:read"
+    "read"
 )
 
 

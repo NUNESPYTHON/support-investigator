@@ -13,7 +13,7 @@ Elias Nunes
 ==========================================================
 """
 
-from config.settings import SUBDOMAIN
+from services.auth import montar_url
 from services.search import (
     buscar_todos_resultados,
     montar_query_tickets,
@@ -21,6 +21,10 @@ from services.search import (
 from services.users import buscar_usuario_por_email
 from services.zendesk import fazer_request
 
+
+# ==========================================================
+# BUSCAR TICKETS POR E-MAIL
+# ==========================================================
 
 def buscar_tickets_por_email(email):
     """
@@ -47,6 +51,10 @@ def buscar_tickets_por_email(email):
     return tickets
 
 
+# ==========================================================
+# BUSCAR TICKET POR ID
+# ==========================================================
+
 def buscar_ticket_por_id(ticket_id):
     """
     Busca um ticket específico pelo ID.
@@ -58,8 +66,7 @@ def buscar_ticket_por_id(ticket_id):
         dict | None: Ticket encontrado ou None.
     """
 
-    url = (
-        f"https://{SUBDOMAIN}.zendesk.com"
+    url = montar_url(
         f"/api/v2/tickets/{ticket_id}.json"
     )
 
