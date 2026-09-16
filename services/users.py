@@ -1,6 +1,6 @@
 """
 ==========================================================
-Zendesk Investigator
+Support Investigator
 
 Arquivo:
 users.py
@@ -10,13 +10,16 @@ Consultar informações de usuários na API da Zendesk.
 
 Autor:
 Elias Nunes
-
 ==========================================================
 """
 
+from services.auth import montar_url
 from services.zendesk import fazer_request
-from config.settings import SUBDOMAIN
 
+
+# ==========================================================
+# BUSCAR USUÁRIO POR E-MAIL
+# ==========================================================
 
 def buscar_usuario_por_email(email):
     """
@@ -29,8 +32,7 @@ def buscar_usuario_por_email(email):
         dict | None
     """
 
-    url = (
-        f"https://{SUBDOMAIN}.zendesk.com"
+    url = montar_url(
         "/api/v2/users/search.json"
     )
 
@@ -64,6 +66,12 @@ def buscar_usuario_por_email(email):
         "email": usuario.get("email"),
         "role": usuario.get("role"),
     }
+
+
+# ==========================================================
+# BUSCAR USUÁRIO POR ID
+# ==========================================================
+
 def buscar_usuario_por_id(user_id):
     """
     Busca um usuário pelo ID na API da Zendesk.
@@ -75,22 +83,22 @@ def buscar_usuario_por_id(user_id):
         dict | None
     """
 
-    from config.settings import SUBDOMAIN
-    from services.zendesk import fazer_request
-
-    url = (
-        f"https://{SUBDOMAIN}.zendesk.com"
+    url = montar_url(
         f"/api/v2/users/{user_id}.json"
     )
 
-    response = fazer_request(url)
+    response = fazer_request(
+        url
+    )
 
     if response is None:
         return None
 
     data = response.json()
 
-    usuario = data.get("user")
+    usuario = data.get(
+        "user"
+    )
 
     if usuario is None:
         return None

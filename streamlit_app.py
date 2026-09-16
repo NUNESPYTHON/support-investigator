@@ -800,7 +800,9 @@ if diagnostico_cliente:
     )
 
     st.info(
-        diagnostico_cliente["resumo"]
+        diagnostico_cliente[
+            "resumo"
+        ]
     )
 
 
@@ -844,6 +846,7 @@ render_resultado()
 # ==========================================================
 
 st.markdown(
+    
     '<div class="footer">'
     'Support Investigator'
     '</div>',

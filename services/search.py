@@ -1,6 +1,6 @@
 """
 ==========================================================
-Zendesk Investigator
+Support Investigator
 
 Arquivo:
 search.py
@@ -14,9 +14,13 @@ Elias Nunes
 ==========================================================
 """
 
+from services.auth import montar_url
 from services.zendesk import fazer_request
-from config.settings import SUBDOMAIN
 
+
+# ==========================================================
+# BUSCAR TODOS OS RESULTADOS
+# ==========================================================
 
 def buscar_todos_resultados(query):
     """
@@ -31,8 +35,7 @@ def buscar_todos_resultados(query):
 
     resultados_finais = []
 
-    url = (
-        f"https://{SUBDOMAIN}.zendesk.com"
+    url = montar_url(
         "/api/v2/search.json"
     )
 
@@ -57,13 +60,22 @@ def buscar_todos_resultados(query):
             []
         )
 
-        resultados_finais.extend(resultados)
+        resultados_finais.extend(
+            resultados
+        )
 
-        url = data.get("next_page")
+        url = data.get(
+            "next_page"
+        )
 
         params = None
 
     return resultados_finais
+
+
+# ==========================================================
+# MONTAR QUERY DE TICKETS
+# ==========================================================
 
 def montar_query_tickets(
     user_id,

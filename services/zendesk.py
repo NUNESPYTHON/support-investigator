@@ -1,12 +1,16 @@
 """
 ==========================================================
-Zendesk Investigator
+Support Investigator
 
 Arquivo:
 zendesk.py
 
 Responsabilidade:
 Centralizar a comunicação com a API da Zendesk.
+
+Autenticação:
+- OAuth 2.0 / Bearer Token em produção
+- API Token como fallback temporário para desenvolvimento local
 
 Autor:
 Elias Nunes
@@ -16,19 +20,45 @@ Elias Nunes
 import requests
 
 from config.settings import (
-    SUBDOMAIN,
     EMAIL,
     API_TOKEN,
 )
 
+from services.auth import (
+    obter_contexto,
+    obter_headers,
+)
 
-def fazer_request(url, params=None):
+
+# ==========================================================
+# CONFIGURAÇÃO
+# ==========================================================
+
+REQUEST_TIMEOUT = 30
+
+
+# ==========================================================
+# REQUISIÇÃO À API
+# ==========================================================
+
+def fazer_request(
+    url: str,
+    params: dict | None = None,
+):
     """
     Executa uma requisição GET autenticada na API da Zendesk.
 
+    Prioridade de autenticação:
+
+    1. OAuth 2.0 / Bearer Token
+    2. API Token legado para desenvolvimento local
+
     Args:
-        url (str): URL do endpoint.
-        params (dict, optional): Parâmetros da requisição.
+        url (str):
+            URL completa do endpoint da Zendesk.
+
+        params (dict | None):
+            Parâmetros opcionais da requisição.
 
     Returns:
         requests.Response | None:
@@ -36,23 +66,123 @@ def fazer_request(url, params=None):
     """
 
     try:
-        response = requests.get(
-            url,
-            auth=(f"{EMAIL}/token", API_TOKEN),
-            params=params,
-            timeout=10,
+        contexto = obter_contexto()
+
+        auth_type = contexto.get(
+            "auth_type"
         )
 
-        if response.status_code == 200:
+        # --------------------------------------------------
+        # OAUTH
+        # --------------------------------------------------
+
+        if auth_type == "oauth":
+
+            headers = obter_headers()
+
+            response = requests.get(
+                url,
+                headers=headers,
+                params=params,
+                timeout=REQUEST_TIMEOUT,
+            )
+
+        # --------------------------------------------------
+        # LEGADO - API TOKEN
+        # --------------------------------------------------
+
+        elif auth_type == "legacy":
+
+            if not EMAIL or not API_TOKEN:
+
+                raise RuntimeError(
+                    "Credenciais legadas da Zendesk "
+                    "não estão configuradas."
+                )
+
+            response = requests.get(
+                url,
+                auth=(
+                    f"{EMAIL}/token",
+                    API_TOKEN,
+                ),
+                params=params,
+                timeout=REQUEST_TIMEOUT,
+            )
+
+        else:
+
+            raise RuntimeError(
+                "Tipo de autenticação Zendesk "
+                "não reconhecido."
+            )
+
+        # --------------------------------------------------
+        # SUCESSO
+        # --------------------------------------------------
+
+        if 200 <= response.status_code < 300:
+
             return response
 
-        print("Erro HTTP:", response.status_code)
+        # --------------------------------------------------
+        # ERRO HTTP
+        # --------------------------------------------------
+
+        print(
+            "Erro HTTP Zendesk:",
+            response.status_code,
+            response.text,
+        )
+
         return None
+
+    # ------------------------------------------------------
+    # TIMEOUT
+    # ------------------------------------------------------
 
     except requests.exceptions.Timeout:
-        print("Timeout na requisição.")
+
+        print(
+            "Timeout ao consultar a API da Zendesk."
+        )
+
         return None
 
+    # ------------------------------------------------------
+    # CONEXÃO
+    # ------------------------------------------------------
+
     except requests.exceptions.ConnectionError:
-        print("Erro de conexão.")
+
+        print(
+            "Erro de conexão com a API da Zendesk."
+        )
+
+        return None
+
+    # ------------------------------------------------------
+    # AUTENTICAÇÃO / CONFIGURAÇÃO
+    # ------------------------------------------------------
+
+    except RuntimeError as erro:
+
+        print(
+            "Erro de autenticação/configuração:",
+            erro,
+        )
+
+        return None
+
+    # ------------------------------------------------------
+    # ERRO INESPERADO
+    # ------------------------------------------------------
+
+    except requests.exceptions.RequestException as erro:
+
+        print(
+            "Erro na requisição à API da Zendesk:",
+            erro,
+        )
+
         return None
