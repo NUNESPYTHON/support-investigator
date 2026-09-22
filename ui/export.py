@@ -18,7 +18,7 @@ from tempfile import NamedTemporaryFile
 
 import streamlit as st
 
-from services.email import enviar_arquivo_email
+from services.email_service import enviar_arquivo_email
 from services.export import (
     STATUS_MAP,
     filtrar_tickets_por_status,

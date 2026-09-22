@@ -13,3 +13,16 @@ __pycache__/
 
 # Configurações locais do VS Code
 .vscode/
+
+# Arquivos temporários
+oauth_demo.py
+streamlit_app.py - Becape
+url.txt
+
+# Arquivos de teste
+teste_*.py
+teste_*.csv
+
+# Ambiente
+.env
+.env.example
