@@ -374,63 +374,6 @@ elif authorization_code:
 
 
 # ==========================================================
-# CONTROLE DE ACESSO POR ASSINATURA
-# ==========================================================
-
-secao_atual = st.session_state.get(
-    "section",
-    "Dashboard",
-)
-
-# ----------------------------------------------------------
-# Billing e Settings continuam acessíveis
-# ----------------------------------------------------------
-
-if secao_atual not in {
-    "Billing",
-    "Settings",
-}:
-
-    try:
-
-        possui_assinatura = assinatura_ativa()
-
-    except Exception as erro:
-
-        st.error(
-            "Unable to verify subscription."
-        )
-
-        st.caption(
-            f"Subscription verification error: {erro}"
-        )
-
-        st.stop()
-
-    # ------------------------------------------------------
-    # SEM ASSINATURA
-    # ------------------------------------------------------
-
-    if not possui_assinatura:
-
-        st.warning(
-            "An active subscription is required "
-            "to use Support Investigator."
-        )
-
-        st.info(
-            "Go to Billing to start your subscription "
-            "or free trial."
-        )
-
-        st.session_state[
-            "section"
-        ] = "Billing"
-
-        st.stop()
-
-
-# ==========================================================
 # ESTILO
 # ==========================================================
 
@@ -531,6 +474,58 @@ st.markdown(
 # ==========================================================
 
 secao_atual = render_dashboard_sidebar()
+
+
+# ==========================================================
+# CONTROLE DE ACESSO POR ASSINATURA
+# ==========================================================
+
+try:
+
+    possui_assinatura = assinatura_ativa()
+
+except Exception as erro:
+
+    st.error(
+        "Unable to verify subscription."
+    )
+
+    st.caption(
+        f"Subscription verification error: {erro}"
+    )
+
+    st.stop()
+
+
+# ==========================================================
+# SEM ASSINATURA
+# ==========================================================
+
+if not possui_assinatura:
+
+    # ------------------------------------------------------
+    # Billing e Settings continuam acessíveis.
+    # Todas as outras áreas ficam bloqueadas.
+    # ------------------------------------------------------
+
+    if secao_atual not in {
+        "Billing",
+        "Settings",
+    }:
+
+        st.warning(
+            "An active subscription is required "
+            "to use Support Investigator."
+        )
+
+        st.info(
+            "Go to Billing to start your subscription "
+            "or free trial."
+        )
+
+        render_billing()
+
+        st.stop()
 
 
 # ==========================================================
