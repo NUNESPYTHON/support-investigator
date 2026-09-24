@@ -48,12 +48,6 @@ if not STRIPE_SECRET_KEY:
     )
 
 
-if not STRIPE_WEBHOOK_SECRET:
-    raise RuntimeError(
-        "STRIPE_WEBHOOK_SECRET não configurada."
-    )
-
-
 stripe.api_key = STRIPE_SECRET_KEY
 
 
@@ -210,6 +204,12 @@ async def stripe_webhook(
     """
     Recebe, valida e processa eventos do Stripe.
     """
+
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=500,
+            detail="Stripe webhook secret not configured.",
+        )
 
     payload = await request.body()
 
