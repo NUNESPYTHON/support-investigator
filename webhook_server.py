@@ -144,7 +144,6 @@ def _extract_user_id_from_subscription(
     )
 
     if not user_id:
-
         return None
 
     return str(user_id)
@@ -193,6 +192,151 @@ def _extract_price_id(
     )
 
 
+def _extract_subscription_period(
+    subscription,
+):
+    """
+    Obtém current_period_start e
+    current_period_end.
+
+    Dependendo do formato do evento Stripe,
+    esses campos podem estar diretamente no
+    objeto subscription ou no primeiro
+    subscription item.
+    """
+
+    current_period_start_timestamp = getattr(
+        subscription,
+        "current_period_start",
+        None,
+    )
+
+    current_period_end_timestamp = getattr(
+        subscription,
+        "current_period_end",
+        None,
+    )
+
+    items = getattr(
+        subscription,
+        "items",
+        None,
+    )
+
+    items_data = (
+        getattr(
+            items,
+            "data",
+            [],
+        )
+        if items
+        else []
+    )
+
+    first_item = (
+        items_data[0]
+        if items_data
+        else None
+    )
+
+    if first_item:
+
+        if not current_period_start_timestamp:
+
+            current_period_start_timestamp = getattr(
+                first_item,
+                "current_period_start",
+                None,
+            )
+
+        if not current_period_end_timestamp:
+
+            current_period_end_timestamp = getattr(
+                first_item,
+                "current_period_end",
+                None,
+            )
+
+    return (
+        current_period_start_timestamp,
+        current_period_end_timestamp,
+    )
+
+
+def _extract_cancel_at_period_end(
+    subscription,
+    current_period_end_timestamp=None,
+):
+    """
+    Determina se o cancelamento está agendado
+    para o final do período.
+
+    A Stripe pode retornar:
+        cancel_at_period_end = True
+
+    ou, em alguns eventos:
+        cancel_at = current_period_end
+        cancel_at_period_end = False
+
+    Neste segundo caso, tratamos o cancelamento
+    como agendado para o final do período.
+    """
+
+    cancel_at_period_end = bool(
+        getattr(
+            subscription,
+            "cancel_at_period_end",
+            False,
+        )
+    )
+
+    cancel_at = getattr(
+        subscription,
+        "cancel_at",
+        None,
+    )
+
+    if (
+        cancel_at
+        and current_period_end_timestamp
+        and cancel_at == current_period_end_timestamp
+    ):
+        cancel_at_period_end = True
+
+    return cancel_at_period_end
+
+
+def _log_subscription_state(
+    status,
+    current_period_start,
+    current_period_end,
+    cancel_at_period_end,
+):
+    """
+    Registra no log o estado salvo da assinatura.
+    """
+
+    print(
+        "[Stripe Webhook] Status:",
+        status,
+    )
+
+    print(
+        "[Stripe Webhook] Current period start:",
+        current_period_start,
+    )
+
+    print(
+        "[Stripe Webhook] Current period end:",
+        current_period_end,
+    )
+
+    print(
+        "[Stripe Webhook] Cancel at period end:",
+        cancel_at_period_end,
+    )
+
+
 # ==========================================================
 # STRIPE WEBHOOK
 # ==========================================================
@@ -218,7 +362,6 @@ async def stripe_webhook(
     )
 
     if not signature:
-
         raise HTTPException(
             status_code=400,
             detail="Stripe-Signature header missing.",
@@ -354,27 +497,25 @@ async def stripe_webhook(
             subscription
         )
 
+        (
+            current_period_start_timestamp,
+            current_period_end_timestamp,
+        ) = _extract_subscription_period(
+            subscription
+        )
+
         current_period_start = _timestamp_to_iso(
-            getattr(
-                subscription,
-                "current_period_start",
-                None,
-            )
+            current_period_start_timestamp
         )
 
         current_period_end = _timestamp_to_iso(
-            getattr(
-                subscription,
-                "current_period_end",
-                None,
-            )
+            current_period_end_timestamp
         )
 
-        cancel_at_period_end = bool(
-            getattr(
+        cancel_at_period_end = (
+            _extract_cancel_at_period_end(
                 subscription,
-                "cancel_at_period_end",
-                False,
+                current_period_end_timestamp,
             )
         )
 
@@ -436,6 +577,13 @@ async def stripe_webhook(
                 resultado.get("id"),
             )
 
+            _log_subscription_state(
+                status=status,
+                current_period_start=current_period_start,
+                current_period_end=current_period_end,
+                cancel_at_period_end=cancel_at_period_end,
+            )
+
     # ======================================================
     # SUBSCRIPTION UPDATED
     # ======================================================
@@ -472,35 +620,78 @@ async def stripe_webhook(
             status = getattr(
                 subscription,
                 "status",
-                None,
+                "inactive",
             )
 
             price_id = _extract_price_id(
                 subscription
             )
 
+            (
+                current_period_start_timestamp,
+                current_period_end_timestamp,
+            ) = _extract_subscription_period(
+                subscription
+            )
+
             current_period_start = _timestamp_to_iso(
-                getattr(
-                    subscription,
-                    "current_period_start",
-                    None,
-                )
+                current_period_start_timestamp
             )
 
             current_period_end = _timestamp_to_iso(
-                getattr(
+                current_period_end_timestamp
+            )
+
+            cancel_at_period_end = (
+                _extract_cancel_at_period_end(
                     subscription,
-                    "current_period_end",
-                    None,
+                    current_period_end_timestamp,
                 )
             )
 
-            cancel_at_period_end = bool(
-                getattr(
-                    subscription,
-                    "cancel_at_period_end",
-                    False,
-                )
+            print(
+                "[Stripe Webhook] "
+                "customer.subscription.updated"
+            )
+
+            print(
+                "User ID:",
+                user_id,
+            )
+
+            print(
+                "Customer ID:",
+                customer_id,
+            )
+
+            print(
+                "Subscription ID:",
+                subscription_id,
+            )
+
+            print(
+                "Price ID:",
+                price_id,
+            )
+
+            print(
+                "Status:",
+                status,
+            )
+
+            print(
+                "Current period start:",
+                current_period_start,
+            )
+
+            print(
+                "Current period end:",
+                current_period_end,
+            )
+
+            print(
+                "Cancel at period end:",
+                cancel_at_period_end,
             )
 
             resultado = atualizar_assinatura_por_user_id(
@@ -542,9 +733,46 @@ async def stripe_webhook(
 
         else:
 
+            customer_id = getattr(
+                subscription,
+                "customer",
+                None,
+            )
+
+            subscription_id = getattr(
+                subscription,
+                "id",
+                None,
+            )
+
+            price_id = _extract_price_id(
+                subscription
+            )
+
+            (
+                current_period_start_timestamp,
+                current_period_end_timestamp,
+            ) = _extract_subscription_period(
+                subscription
+            )
+
+            current_period_start = _timestamp_to_iso(
+                current_period_start_timestamp
+            )
+
+            current_period_end = _timestamp_to_iso(
+                current_period_end_timestamp
+            )
+
             resultado = atualizar_assinatura_por_user_id(
                 user_id=user_id,
+                stripe_customer_id=customer_id,
+                stripe_subscription_id=subscription_id,
+                stripe_price_id=price_id,
                 subscription_status="canceled",
+                current_period_start=current_period_start,
+                current_period_end=current_period_end,
+                cancel_at_period_end=False,
             )
 
             print(
@@ -552,6 +780,13 @@ async def stripe_webhook(
                 resultado.get("id")
                 if resultado
                 else None,
+            )
+
+            _log_subscription_state(
+                status="canceled",
+                current_period_start=current_period_start,
+                current_period_end=current_period_end,
+                cancel_at_period_end=False,
             )
 
     # ======================================================
