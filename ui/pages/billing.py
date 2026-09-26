@@ -6,7 +6,8 @@ Arquivo:
 billing.py
 
 Responsabilidade:
-Tela de Billing e assinatura do Support Investigator.
+Tela de assinatura e gerenciamento da assinatura
+do Support Investigator.
 
 Autor:
 Elias Nunes
@@ -24,13 +25,13 @@ from services.stripe_service import (
 
 def render():
     """
-    Renderiza a página de Billing.
+    Renderiza a página de assinatura.
     """
 
-    st.title("Billing")
+    st.title("Assinatura")
 
     st.caption(
-        "Manage your Support Investigator subscription."
+        "Gerencie sua assinatura do Support Investigator."
     )
 
     # ======================================================
@@ -42,7 +43,7 @@ def render():
     if usuario is None:
 
         st.error(
-            "Authenticated user not found."
+            "Usuário autenticado não encontrado."
         )
 
         return
@@ -70,7 +71,7 @@ def render():
     except Exception as erro:
 
         st.error(
-            f"Unable to load subscription: {erro}"
+            f"Não foi possível carregar sua assinatura: {erro}"
         )
 
         return
@@ -86,14 +87,16 @@ def render():
         )
 
         st.write(
-            "Get access to the Support Investigator features."
+            "Tenha acesso aos recursos de investigação "
+            "do Support Investigator."
         )
 
         st.markdown(
             """
-            **Your subscription is currently inactive.**
+            **Sua assinatura está inativa.**
 
-            Subscribe to continue using the platform.
+            Comece seu período de avaliação gratuita
+            para continuar usando a plataforma.
             """
         )
 
@@ -106,27 +109,27 @@ def render():
         with col1:
 
             st.markdown(
-                "### Professional Plan"
+                "### Plano Professional"
             )
 
             st.write(
-                "Monthly subscription"
+                "Assinatura mensal"
             )
 
             st.write(
-                "7-day free trial"
+                "7 dias grátis"
             )
 
         with col2:
 
             st.markdown(
-                "### R$ 49.99 / month"
+                "### R$ 49,99 / mês"
             )
 
         st.write("")
 
         subscribe = st.button(
-            "Subscribe",
+            "Começar assinatura",
             type="primary",
             use_container_width=True,
             key="billing_subscribe",
@@ -142,23 +145,24 @@ def render():
                 )
 
                 st.link_button(
-                    "Continue to Stripe Checkout",
+                    "Continuar para o Stripe Checkout",
                     session.url,
                     use_container_width=True,
                 )
 
                 st.success(
-                    "Checkout created successfully."
+                    "Checkout criado com sucesso."
                 )
 
                 st.info(
-                    "Click the button above to continue to Stripe Checkout."
+                    "Clique no botão acima para continuar "
+                    "com sua assinatura."
                 )
 
             except Exception as erro:
 
                 st.error(
-                    f"Unable to create checkout session: {erro}"
+                    f"Não foi possível criar o checkout: {erro}"
                 )
 
         return
@@ -173,7 +177,7 @@ def render():
     )
 
     st.subheader(
-        "Current subscription"
+        "Sua assinatura"
     )
 
     # ======================================================
@@ -185,60 +189,82 @@ def render():
         "trialing",
     }:
 
-        st.success(
-            f"Subscription status: {status}"
-        )
+        if status == "trialing":
+
+            st.success(
+                "Período de avaliação ativo"
+            )
+
+        else:
+
+            st.success(
+                "Assinatura ativa"
+            )
 
     elif status == "past_due":
 
         st.warning(
-            "Your subscription has a payment issue. "
-            "Please update your payment method."
+            "Identificamos um problema com o pagamento. "
+            "Atualize sua forma de pagamento para continuar."
         )
 
     elif status == "canceled":
 
         st.error(
-            "Your subscription has been canceled."
+            "Sua assinatura foi cancelada."
         )
 
     else:
 
         st.warning(
-            f"Subscription status: {status}"
+            f"Status da assinatura: {status}"
         )
 
     # ======================================================
     # DETALHES
     # ======================================================
 
-    st.write(
-        "Stripe Customer ID:",
-        assinatura.get(
-            "stripe_customer_id"
-        ),
+    stripe_customer_id = assinatura.get(
+        "stripe_customer_id"
+    )
+
+    stripe_subscription_id = assinatura.get(
+        "stripe_subscription_id"
+    )
+
+    current_period_end = assinatura.get(
+        "current_period_end"
+    )
+
+    cancel_at_period_end = assinatura.get(
+        "cancel_at_period_end"
     )
 
     st.write(
-        "Stripe Subscription ID:",
-        assinatura.get(
-            "stripe_subscription_id"
-        ),
+        "Cliente Stripe:",
+        stripe_customer_id or "Não disponível",
     )
 
     st.write(
-        "Current period end:",
-        assinatura.get(
-            "current_period_end"
-        ),
+        "Assinatura Stripe:",
+        stripe_subscription_id or "Não disponível",
     )
 
     st.write(
-        "Cancel at period end:",
-        assinatura.get(
-            "cancel_at_period_end"
-        ),
+        "Fim do período:",
+        current_period_end or "Não disponível",
     )
+
+    # ------------------------------------------------------
+    # CANCELAMENTO AGENDADO
+    # ------------------------------------------------------
+
+    if cancel_at_period_end:
+
+        st.warning(
+            "Sua assinatura está programada para ser "
+            "encerrada ao final do período atual."
+        )
 
     st.divider()
 
@@ -247,28 +273,24 @@ def render():
     # ======================================================
 
     st.subheader(
-        "Manage your subscription"
+        "Gerenciar assinatura"
     )
 
     st.write(
-        "Update your payment method or manage your subscription "
-        "through Stripe."
-    )
-
-    stripe_customer_id = assinatura.get(
-        "stripe_customer_id"
+        "Atualize sua forma de pagamento ou gerencie "
+        "sua assinatura com segurança pelo Stripe."
     )
 
     if not stripe_customer_id:
 
         st.warning(
-            "Stripe Customer ID is not available yet."
+            "O ID do cliente Stripe ainda não está disponível."
         )
 
         return
 
     manage_subscription = st.button(
-        "Manage Subscription",
+        "Gerenciar assinatura",
         type="primary",
         use_container_width=True,
         key="billing_manage_subscription",
@@ -283,21 +305,22 @@ def render():
             )
 
             st.link_button(
-                "Open Stripe Customer Portal",
+                "Abrir portal da Stripe",
                 portal_session.url,
                 use_container_width=True,
             )
 
             st.success(
-                "Customer Portal created successfully."
+                "Portal de assinatura criado com sucesso."
             )
 
             st.info(
-                "Click the button above to manage your subscription."
+                "Use o portal para atualizar seu cartão "
+                "ou gerenciar sua assinatura."
             )
 
         except Exception as erro:
 
             st.error(
-                f"Unable to open Customer Portal: {erro}"
+                f"Não foi possível abrir o portal da Stripe: {erro}"
             )
