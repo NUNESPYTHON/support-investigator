@@ -203,7 +203,7 @@ TRADUCOES = {
     # ------------------------------------------------------
 
     "dashboard": {
-        "pt": "Dashboard",
+        "pt": "Início",
         "en": "Dashboard",
         "es": "Panel",
     },
@@ -215,7 +215,7 @@ TRADUCOES = {
     },
 
     "investigator": {
-        "pt": "Investigator",
+        "pt": "Investigação",
         "en": "Investigator",
         "es": "Investigator",
     },
@@ -227,8 +227,8 @@ TRADUCOES = {
     },
 
     "billing": {
-        "pt": "Cobrança",
-        "en": "Billing",
+        "pt": "Assinatura",
+        "en": "Subscription",
         "es": "Facturación",
     },
 
@@ -237,7 +237,6 @@ TRADUCOES = {
         "en": "Settings",
         "es": "Configuración",
     },
-
     # ------------------------------------------------------
     # AÇÕES
     # ------------------------------------------------------
