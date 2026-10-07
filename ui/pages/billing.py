@@ -228,26 +228,12 @@ def render():
         "stripe_customer_id"
     )
 
-    stripe_subscription_id = assinatura.get(
-        "stripe_subscription_id"
-    )
-
     current_period_end = assinatura.get(
         "current_period_end"
     )
 
     cancel_at_period_end = assinatura.get(
         "cancel_at_period_end"
-    )
-
-    st.write(
-        "Cliente Stripe:",
-        stripe_customer_id or "Não disponível",
-    )
-
-    st.write(
-        "Assinatura Stripe:",
-        stripe_subscription_id or "Não disponível",
     )
 
     st.write(
@@ -284,7 +270,7 @@ def render():
     if not stripe_customer_id:
 
         st.warning(
-            "O ID do cliente Stripe ainda não está disponível."
+            "Não foi possível identificar sua assinatura."
         )
 
         return
