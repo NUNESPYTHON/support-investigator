@@ -1,3 +1,4 @@
+
 """
 ==========================================================
 Support Investigator
@@ -21,35 +22,53 @@ def render():
     Renderiza a tela de login.
     """
 
+    # ======================================================
+    # TÍTULO
+    # ======================================================
+
     st.title("Support Investigator")
 
     st.caption(
-        "Sign in to continue."
+        "Entre na sua conta para continuar."
     )
 
+    # ======================================================
+    # CREDENCIAIS
+    # ======================================================
+
     email = st.text_input(
-        "Email"
+        "E-mail",
+        placeholder="Digite seu e-mail",
     )
 
     senha = st.text_input(
-        "Password",
+        "Senha",
         type="password",
+        placeholder="Digite sua senha",
     )
 
+    # ======================================================
+    # AÇÕES
+    # ======================================================
+
     entrar = st.button(
-        "Login",
+        "Entrar",
         use_container_width=True,
     )
 
     criar = st.button(
-        "Create account",
+        "Criar conta",
         use_container_width=True,
     )
 
     recuperar = st.button(
-        "Forgot password",
+        "Esqueci minha senha",
         use_container_width=True,
     )
+
+    # ======================================================
+    # RETORNO
+    # ======================================================
 
     return (
         email,
