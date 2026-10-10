@@ -1,3 +1,4 @@
+
 """
 ==========================================================
 Support Investigator
@@ -21,44 +22,46 @@ def render():
     Renderiza a tela de criação de conta.
     """
 
-    st.title("Create your account")
+    st.title("Crie sua conta")
 
     st.caption(
-        "Start your Support Investigator account."
+        "Comece a usar o Support Investigator."
     )
 
     nome = st.text_input(
-        "Name",
-        placeholder="Your name",
+        "Nome",
+        placeholder="Digite seu nome",
     )
 
     empresa = st.text_input(
-        "Company",
-        placeholder="Your company (optional)",
+        "Empresa",
+        placeholder="Sua empresa (opcional)",
     )
 
     email = st.text_input(
-        "Email",
-        placeholder="you@example.com",
+        "E-mail",
+        placeholder="Digite seu e-mail",
     )
 
     senha = st.text_input(
-        "Password",
+        "Senha",
         type="password",
+        placeholder="Crie uma senha",
     )
 
     confirmar_senha = st.text_input(
-        "Confirm password",
+        "Confirmar senha",
         type="password",
+        placeholder="Digite sua senha novamente",
     )
 
     criar_conta = st.button(
-        "Create account",
+        "Criar conta",
         use_container_width=True,
     )
 
     voltar_login = st.button(
-        "Back to login",
+        "Voltar para o login",
         use_container_width=True,
     )
 
