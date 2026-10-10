@@ -1,3 +1,4 @@
+
 """
 ==========================================================
 Support Investigator
@@ -44,7 +45,10 @@ def criar_usuario(
                     "name": nome.strip(),
                     "company": empresa.strip(),
                 },
-                "email_redirect_to": "http://localhost:8501",
+                "email_redirect_to": (
+                    "https://support-investigator-"
+                    "ttqz6wehpqbtunhj8gxu9d.streamlit.app/"
+                ),
             },
         }
     )
